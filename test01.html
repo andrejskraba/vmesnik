@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+
+<!-- Univerza v Mariboru | Fakulteta za organizacijske vede -->
+<!-- Laboratorij za kibernetiko in sisteme za podporo odločanju -->
+<!-- Andrej Škraba CC BY-SA 2021 -->
+
+<html>
+<head>
+<title>Frequency</title>
+</head>
+
+<body>
+
+Večkrat kliknite na gumb znotraj intervala ene sekunde. Če naprej kliknete 1x, počakate in nato kliknete 2x bo koordinata na kateri se bo izrisal kvadrat [1, 2]. ->
+<br>
+<button id="DoubleClick" onclick="countMultipleClicks()">Večkrat kliknite na ta gumb</button>
+<br>
+<div id="izpis-koordinat">Koordinate: [×, ×]</div>
+<br>
+<canvas id="platno-1" width="180" height="180" style="border:1px dashed #009999"></canvas>
+<br>
+
+števecKlikovNaGumb ->
+<input id="val4" value=0 />    
+<br>
+števecKlikovZnotrajIntervala ->
+<input id="val5" value=0 />    
+<br>
+<br>
+
+<!-- za log v div -->
+<div id="print1" style="border:1px dashed gray;"></div>
+
+<script type="text/javascript">
+"use strict";
+
+var divPrint1; // variable for div object where the values will be printed (logged)    
+    
+var timesArray = new Array();
+
+var buttonClickCounter = 0;
+    
+var output = document.getElementById('output');
+
+var stevec = 0;
+
+var tabelaKoordinat = new Array(); // spremenljivka za dve koordinati - x in y
+
+var canvas = document.getElementById('platno-1');
+var ctx = canvas.getContext('2d');
+
+// definiramo polje z barvnimi kodami
+//                 rdeča      zelena     modra      rumena     vijoličasta rožnata   črna       oranžna    rjava      siva
+var tabelaBarv = ["#ff0000", "#008000", "#0000ff", "#ffff00", "#800080", "#ffc0cb", "#000000", "#ffa500", "#a52a2a", "#808080"];
+    
+class LogDiv {
+    constructor(divId, numberOfLinesBeforeScroll) {
+        this.divName = document.getElementById(divId); // name of div where values will be printed
+        this.numberOfLinesBeforeScroll = numberOfLinesBeforeScroll; // number of lines which print before scroll
+        this.linesPrintCounter = 0;
+    }
+    log(msg) { // function for printout of the messages with scroll functionality
+        var node=document.createElement("tr"); // we create the variable node as the a table row (table row)
+        var textnode=document.createTextNode(this.linesPrintCounter + " | " + msg); // we create element with the text
+        node.appendChild(textnode); // adding text to "node", t.j. vrstici tabele
+        this.divName.insertBefore(node, this.divName.childNodes[0]); // inserting into variable node
+        if (this.linesPrintCounter > this.numberOfLinesBeforeScroll-1) { // if the lines are more than limit -> start with scroll
+            this.divName.removeChild(this.divName.childNodes[this.numberOfLinesBeforeScroll], this.divName.childNodes[this.numberOfLinesBeforeScroll]); // we remove the oldest printout
+        }
+        this.linesPrintCounter++; // increasing the number of printouts
+    } 
+    
+}    
+
+// ***********************************************************************
+// Branje klika
+// ***********************************************************************
+    
+function countMultipleClicks () {
+    if (buttonClickCounter == 0) { // if the counter was not started yet
+        var timerObject = setTimeout(countValuesAndChopArray, 1000); // then start the counter
+        divPrint1.log("Timer started at: " + Date.now());
+    }
+    buttonClickCounter++; // increase buttonClickCounter
+    document.getElementById('val4').value = buttonClickCounter; // display the results
+    timesArray.push(Date.now()); // push the date timestamp in the array
+    divPrint1.log("Tabela s časovnimi žigi klikov: " + timesArray); // display the array
+    divPrint1.log("Časovni klik zadnjega klika: " + timesArray[timesArray.length - 1]);
+}
+    
+function countValuesAndChopArray () {
+// function counts the values in the timesArray that are less or equal to timeValue and chops them out
+// function returns chopped array and number of occurences
+// timesArray must be defined as global variable not to lose time in between    
+
+var timeValue = Date.now(); // čas do katerega gledamo koliko klikov je bilo izvedenih znotraj 1000ms
+                        // ta funkcija se požene po času 1000ms tako vzamemo čas ob klicu te funkcije
+var counterOfClicksWithinInterval = 0;
+buttonClickCounter = 0; // by this we set the flag, that the new setTimeout could be started (up in the code)
+
+for (var i = 0; i < timesArray.length; i++) {
+    if (timesArray[i] <= timeValue) {
+        counterOfClicksWithinInterval++;
+    }
+    else {break;}
+}
+
+document.getElementById('val5').value = counterOfClicksWithinInterval;
+
+tabelaKoordinat.push(counterOfClicksWithinInterval);
+
+if(tabelaKoordinat.length == 1){ // v primeru, da imamo le eno koordinato
+    document.getElementById("izpis-koordinat").innerHTML = "Koordinate: [" + tabelaKoordinat[0] + ", " + "×" + "]";
+}
+
+if(tabelaKoordinat.length == 2){ // v primeru, da imamo dve koordinati
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // brišemo platno
+    //ctx.fillStyle = (tabelaBarv[tabelaKoordinat[0]-1 + tabelaKoordinat[1]-1]); // izberemo barvo iz tabele barv glede na vsoto
+
+    
+    ctx.fillStyle = 'rgb(' + Math.floor(30 * tabelaKoordinat[0] + 70) + ', ' + Math.floor(30 * tabelaKoordinat[1] + 120) + ', 40)';
+
+    ctx.fillRect((tabelaKoordinat[0]-1)*30, (7-tabelaKoordinat[1]-1)*30, 30, 30);
+    document.getElementById("izpis-koordinat").innerHTML = "Koordinate: [" + tabelaKoordinat[0] + ", " + tabelaKoordinat[1] + "]";
+    tabelaKoordinat.pop(); // odstranimo zadnji element
+    tabelaKoordinat.pop(); // odstranimo zadnji element še enkrat, tabela je prazna
+
+
+    // izris mreže
+    ctx.strokeStyle = "#ffc0cb"; // določimo barvo
+    for (i=30;i<=canvas.width-30;i+=30) {
+        // vodoravne črte
+        ctx.moveTo(0,i);
+        ctx.lineTo(canvas.width,i);
+        ctx.stroke();
+        // navpične črte
+        ctx.moveTo(i,0);
+        ctx.lineTo(i,canvas.height);
+        ctx.stroke();
+    }
+
+}
+
+    
+timesArray.splice(0, counterOfClicksWithinInterval); // remove the values from 0, n=counterOfClicksWithinInterval values
+    
+//return counterOfClicksWithinInterval; // function returns the number of occurences of times leess or equal to timeValue    
+
+}
+
+divPrint1 = new LogDiv("print1", 10); // as the argument at the creation of the new object we declare the div name into which the printout of the log will be performed and the number of lines before the scroll     
+    
+</script>
+    
+</body>
+    
+</html>
